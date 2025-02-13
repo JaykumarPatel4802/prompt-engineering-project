@@ -1,0 +1,49 @@
+---
+title: "Milestone 1"
+subtitle: "Project Focus"
+date: today
+author: Jaykumar Patel, Laith Altarabishi, Harold Zhong
+format:
+  html:
+    toc: true
+    embed-resources: true
+mainfont: TeX Gyre Schola
+monofont: JetBrainsMono Nerd Font
+mathfont: TeX Gyre Schola Math Regular
+jupyter: python3
+---
+
+## Domain
+
+The domain for our ChatBot will be news articles. Specifically, our ChatBot will be able to generate a summary or highlight the key points given a news article.
+
+### Why this domain?
+
+**A ChatBot that can summarize or highlight key points in a news article is useful for various reasons.**
+
+- Information Overload - There is an overwhelming amount of news published on the internet. A ChatBot can help users digest information quickly.
+- Efficiency - People don't have time to read entire articles. A ChatBot can help users scan multiple articles quickly and focus on the ones they are interested in.
+- Combating Misinformation - A ChatBot can help prevent users from reading articles with clickbait or misleading titles.
+
+
+### Local vs Cloud
+
+- We plan to finetune and run our ChatBot locally.
+
+
+## Potential Datasets
+
+- <https://huggingface.co/datasets/gopalkalpande/bbc-news-summary>
+  - This dataset contains over 2k entries containing BBC articles and their summaries.
+  - Each entry has the following fields: `File_path`, `Articles`, and `Summaries`
+    - The relevant fields are: `Articles` and `Summaries`
+- <https://huggingface.co/datasets/abisee/cnn_dailymail>
+  - This dataset contains over 300k entries, containing CNN daily mail and their highlights.
+  - Each entry has the following fields: `article`, `highlights`, and `id`
+    - The relevant fields are: `article` and `highlights`
+- <https://huggingface.co/datasets/argilla/news-summary>
+  - This dataset contains around 1k entries, containing news articles and their key points.
+  - Each entry has the following fields: `text`, `prediction`, `metrics`, `id`, etc.
+    - The relevant fields are: `text` (the news article) and `prediction` (the key points)
+
+All of the above datasets contain useful information, such as news articles and their summaries or key points. However, the `abisee/cnn_dailymail` dataset stands out since it contains over 300k entries, which is ample for creating our ChatBot.
