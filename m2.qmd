@@ -1,0 +1,182 @@
+---
+title: "Milestone 2"
+subtitle: "Obtaining and Labeling Dataset"
+date: today
+author: Jaykumar Patel, Laith Altarabishi, Harold Zhong
+format:
+  html:
+    toc: true
+    embed-resources: true
+mainfont: TeX Gyre Schola
+monofont: JetBrainsMono Nerd Font
+mathfont: TeX Gyre Schola Math Regular
+jupyter: python3
+---
+
+# Intro
+
+This documents our choice of dataset for our project.
+
+# Data card information
+
+## Dataset
+
+The dataset we will use is `abisee/cnn_dailymail` which is available on Hugging Face.
+
+At a high level, this dataset contains over 300k entries, containing CNN daily mail and their highlights.
+
+## Source
+
+The dataset was created as a part of the research paper [Abstractive Text Summarization using Sequence-to-sequence RNNs and
+Beyond](https://arxiv.org/pdf/1602.06023v5). The authors of that paper created this dataset (`abisee/cnn_dailymail`) by modifying an existing corpus (created by authors of [Teaching Machines to Read and Comprehend](https://arxiv.org/pdf/1506.03340)) to include the summaries of articles.
+
+The code for the original data collection can be found at <https://github.com/google-deepmind/rc-data>. The updated code that does not anonymize the data can be found at <https://github.com/abisee/cnn-dailymail>.
+
+The text (articles) from which the dataset is collected is written by journalists at CNN and Daily Mail. There are articles from CNN, covering April 2007 to April 2015, and Daily Mail, from June 2010 to April 2015. These articles were collected via the Wayback Machine archives of their respective websites.
+
+## URL
+
+The URL of the dataset on Hugging Face is: <https://huggingface.co/datasets/abisee/cnn_dailymail>
+
+## Repository
+
+The repository that contains the `abisee/cnn_dailymail` dataset is Hugging Face.
+
+## Task we intend to use it for
+
+We plan to use this dataset for the task of summarization. Specifically, we aim to use this dataset to finetune a model to extract the important information, or "highlights", from a news article.
+
+After finetuning, our ChatBot will be able to highlight the key points given a news article.
+
+## Size
+
+The following table shows the size specifications (Memory, Number of Rows, and Number of Columns) for each of the Splits (Train, Validation, and Test).
+
+| Split | Memory (Bytes) | Number of Rows | Number of Columns |
+|-------|----------------|----------------|-------------------|
+| Train | 1101073761 | 287113 | 3 |
+| Validation | 54494050 | 13368 | 3 |
+| Test | 45671279 | 11490 | 3
+
+The complete dataset has 312,971 rows.
+
+## Structure
+
+The following table shows the structure of the dataset.
+
+| Dataset Split |	Number of Instances (Rows) in Split |
+|---------------|------------------------------|
+| Train	| 287113 |
+| Validation | 13368 |
+| Test	| 11490 |
+
+## Other Information
+
+This dataset contains 3 versions. Version 1.0.0 contains questions along with the articles, intended for question answering. Versions 2.0.0 and 3.0.0 are structured to support summarization rather than question answering. Version 2.0.0 contains anonymized data where named entities were replaced with unique identifiers. Version 3.0.0 contains non-anonymized data. 
+
+We will be using Version 3.0.0 as it aligns best with our task of providing highlights of news articles.
+
+| Column | Mean Token Count |
+|--------|------------------|
+| article | 781 |
+| highlights | 56 |
+
+Table: This table specifies the average token count for the `article` and `highlights` columns in the dataset.
+
+# Data dictionary
+
+
+| Column Name | Description | Type | Units | Example |
+|-------------|-------------|------|-------|---------|
+| article | A string containing the body of the news article | string | N/A | WASHINGTON (CNN) -- Vice President Dick Cheney will serve as acting president briefly Saturday while President Bush is anesthetized for a routine colonoscopy, White House spokesman Tony Snow said Friday. Bush is scheduled to have the medical procedure, expected to take about 2 1/2 hours, at the presidential retreat at Camp David, Maryland, Snow said. Bush's last colonoscopy was in June 2002, and no abnormalities were found, Snow said. The president's doctor had recommended a repeat procedure in about five years. The procedure will be supervised by Dr. Richard Tubb and conducted by a multidisciplinary team from the National Naval Medical Center in Bethesda, Maryland, Snow said. A colonoscopy is the most sensitive test for colon cancer, rectal cancer and polyps, small clumps of cells that can become cancerous, according to the Mayo Clinic. Small polyps may be removed during the procedure. Snow said that was the case when Bush had colonoscopies before becoming president. Snow himself is undergoing chemotherapy for cancer that began in his colon and spread to his liver. Snow told reporters he had a chemo session scheduled later Friday. Watch Snow talk about Bush's procedure and his own colon cancer » . "The president wants to encourage everybody to use surveillance," Snow said. The American Cancer Society recommends that people without high-risk factors or symptoms begin getting screened for signs of colorectal cancer at age 50. E-mail to a friend . |
+| highlights | A string containing the highlight of the article as written by the article author | string | N/A | President Bush will have a routine colonoscopy Saturday . While he's anesthetized, his powers will be transferred to the vice president . Bush had last colonoscopy in 2002, which found no problems . |
+| id | A string containing the hexadecimal formatted SHA1 hash of the url where the story was retrieved from | string | N/A | 35f0e33de7923036a97ac245d899f990bda5e242 |
+
+Table: This table specifies which columns are in the dataset, along with their description, type, units, and examples.
+
+# Appendix
+
+The following contains the Python code to retrieve information about the dataset.
+
+```{python}
+dataset = "abisee/cnn_dailymail"
+```
+
+## Check if dataset is valid
+
+```{python}
+import requests
+API_URL = f"https://datasets-server.huggingface.co/is-valid?dataset={dataset}"
+def query():
+    response = requests.get(API_URL)
+    return response.json()
+data = query()
+print(data)
+```
+
+## Check if dataset has configurations and splits
+
+Rotten tomatoes has a train and test split
+
+```{python}
+import requests
+API_URL = f"https://datasets-server.huggingface.co/splits?dataset={dataset}"
+def query():
+    response = requests.get(API_URL)
+    return response.json()
+data = query()
+print(data)
+```
+
+## Preview the dataset
+
+Gives first rows
+
+```{python}
+import requests
+API_URL = f"https://datasets-server.huggingface.co/first-rows?dataset={dataset}&config=3.0.0&split=train"
+def query():
+    response = requests.get(API_URL)
+    return response.json()
+data = query()
+print(data)
+```
+
+## Download slices of dataset
+
+```{python}
+import requests
+API_URL = f"https://datasets-server.huggingface.co/rows?dataset={dataset}&config=3.0.0&split=train&offset=150&length=10"
+def query():
+    response = requests.get(API_URL)
+    return response.json()
+data = query()
+print(data)
+```
+
+## Access Parquet files
+Haystack does this automatically
+Parquet is a way of storing the data. Data starts off in different formats (json, csv, database format, etc.). For storage efficience and uniform interface, Huggingface converts it into Parquet format. And gives it back to me in whatever format I want.
+
+```{python}
+import requests
+API_URL = f"https://datasets-server.huggingface.co/parquet?dataset={dataset}"
+def query():
+    response = requests.get(API_URL)
+    return response.json()
+data = query()
+print(data)
+```
+
+## Get the size of the dataset
+
+```{python}
+import requests
+API_URL = f"https://datasets-server.huggingface.co/size?dataset={dataset}"
+def query():
+    response = requests.get(API_URL)
+    return response.json()
+data = query()
+print(data)
+```
+
