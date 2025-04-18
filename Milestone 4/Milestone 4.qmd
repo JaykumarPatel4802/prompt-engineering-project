@@ -1,0 +1,357 @@
+---
+title: "Milestone 4"
+subtitle: "Chatbot Evaluation"
+date: today
+author: Jaykumar Patel, Laith Altarabishi, Harold Zhong
+format:
+  html:
+    toc: true
+    embed-resources: true
+mainfont: TeX Gyre Schola
+monofont: JetBrainsMono Nerd Font
+mathfont: TeX Gyre Schola Math Regular
+jupyter: python3
+---
+
+# Intro
+
+This documents the evaluation of out chatbot.
+
+# Install Packages
+
+```python
+%%capture
+import os
+if "COLAB_" not in "".join(os.environ.keys()):
+    !pip install unsloth
+else:
+    # Do this only in Colab notebooks! Otherwise use pip install unsloth
+    !pip install --no-deps bitsandbytes accelerate xformers==0.0.29.post3 peft trl triton cut_cross_entropy unsloth_zoo
+    !pip install sentencepiece protobuf datasets huggingface_hub hf_transfer
+    !pip install --no-deps unsloth
+
+# for Rouge
+! pip install evaluate
+! pip install rouge_score
+
+# for BertScore
+! pip install transformers
+! pip install bert-score
+```
+
+# Load Original Base Model
+
+```python
+#| colab: {base_uri: https://localhost:8080/}
+from unsloth import FastLanguageModel
+
+max_seq_length = 2048 # Choose any! We auto support RoPE Scaling internally!
+dtype = None # None for auto detection. Float16 for Tesla T4, V100, Bfloat16 for Ampere+
+load_in_4bit = True # Use 4bit quantization to reduce memory usage. Can be False.
+```
+
+```python
+#| colab: {base_uri: https://localhost:8080/, height: 1000, referenced_widgets: [8f5ba48360ea4ec4973c19be92d16e6e, 33baada826c3426dadf5ca8915c442cf, 09134ff548df41c2b5d57d2ee7a588fa, f43fc24f955b4b9fa4259e641404c53e, 06290fba989d42f88f3bcf85a17cad58, e118759fe24446f3a4a93644a7465113, 8a4cf501406a47c98fd54027682dc880, f3d238574acc41a3822efd54ddab73e4, ac4f8e90d0734adbb749c67626461a7f, b1b87d9dd8564c3780e2ad83131e294b, 2f68da1f91d34e3a8d852e2978e5204a]}
+model, tokenizer = FastLanguageModel.from_pretrained(
+    model_name = "unsloth/Qwen2.5-7B",
+    max_seq_length = max_seq_length,
+    dtype = dtype,
+    load_in_4bit = load_in_4bit,
+)
+FastLanguageModel.for_inference(model) # Enable native 2x faster inference
+```
+
+# Load Fine-Tuned Model
+
+```python
+#| colab: {base_uri: https://localhost:8080/}
+from unsloth import FastLanguageModel
+
+max_seq_length = 2048 # Choose any! We auto support RoPE Scaling internally!
+dtype = None # None for auto detection. Float16 for Tesla T4, V100, Bfloat16 for Ampere+
+load_in_4bit = True # Use 4bit quantization to reduce memory usage. Can be False.
+```
+
+```python
+#| colab: {base_uri: https://localhost:8080/, height: 1000, referenced_widgets: [2a799d63c8ce4e409968d43560366b93, 7b3821ee6ceb42d2b821eac170f98628, e8ab81e36dfc41d482c24d4408f11eba, 350f3a26f5d64ca999e4b571738b60ff, 08a9f02c8be74d939751d24778c144f8, fb09fba313a24c1cba590edb831a82b1, c7fa5b70c5a94f29850018afa4da11f4, 9974d14e5071411589120a1143189446, e5469f29ad8d44e6b70c133d831644f1, 11e846c2509b474b827a573b793d30c0, 3ce497efa4a7441ebca798221eb30d65]}
+fine_tuned_model, fine_tuned_tokenizer = FastLanguageModel.from_pretrained(
+    model_name = "lora_model", # YOUR MODEL YOU USED FOR TRAINING
+    max_seq_length = max_seq_length,
+    dtype = dtype,
+    load_in_4bit = load_in_4bit,
+)
+FastLanguageModel.for_inference(fine_tuned_model) # Enable native 2x faster inference
+```
+
+# Testing Data Preparation
+
+```python
+from datasets import load_dataset
+test_dataset = load_dataset("abisee/cnn_dailymail", name = "3.0.0", split = "test[:1%]")
+```
+
+```python
+#| colab: {base_uri: https://localhost:8080/}
+print(len(test_dataset))
+print(test_dataset[0])
+```
+
+# Add formatter
+
+```python
+alpaca_prompt = """Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
+
+### Instruction:
+{}
+
+### Input:
+{}
+
+### Response:
+{}"""
+
+def formatting_prompts_func(input_text):
+    instruction = "Given the news article, determine the key highlights."
+    output_text = ""
+    text = alpaca_prompt.format(instruction, input_text, output_text)
+    return text
+```
+
+```python
+#| colab: {base_uri: https://localhost:8080/}
+# Testing the formatter
+print(formatting_prompts_func(test_dataset[0]['article']))
+```
+
+### Run Inference
+
+```python
+import time
+
+def get_highlights(article, fine_tuned = False):
+  start = time.time()
+  if fine_tuned:
+    inputs = fine_tuned_tokenizer(
+    [
+      formatting_prompts_func(article)
+    ], return_tensors = "pt").to("cuda")
+
+    outputs = fine_tuned_model.generate(**inputs, max_new_tokens = 128)
+    decoded_output = fine_tuned_tokenizer.batch_decode(outputs)
+
+    end = time.time()
+
+    return decoded_output[0].split('### Response:')[-1].replace(fine_tuned_tokenizer.eos_token, ''), end - start
+
+  inputs = tokenizer(
+  [
+    formatting_prompts_func(article)
+  ], return_tensors = "pt").to("cuda")
+
+  outputs = model.generate(**inputs, max_new_tokens = 128)
+  decoded_output = tokenizer.batch_decode(outputs)
+
+  end = time.time()
+
+  return decoded_output[0].split('### Response:')[-1], end - start
+```
+
+```python
+#| colab: {base_uri: https://localhost:8080/}
+import random
+
+random_index = random.randint(0, len(test_dataset) - 1)
+print(f"Testing index: {random_index}")
+
+print("Article:")
+print(test_dataset[random_index]['article'])
+print()
+print("Highlights")
+print(test_dataset[random_index]['highlights'])
+print()
+
+print("Original Model Test Highlights")
+original_model_test = get_highlights(test_dataset[random_index]['article'], fine_tuned=False)
+print(original_model_test[0])
+print("Original Model Test Time")
+print(original_model_test[1])
+
+print()
+
+print("Fine-tuned Model Test Highlights")
+fine_tuned_model_test = get_highlights(test_dataset[random_index]['article'], fine_tuned=True)
+print(fine_tuned_model_test[0])
+print("Fine-tuned Model Test Time")
+print(fine_tuned_model_test[1])
+```
+
+```python
+random_index_2 = random.randint(0, len(test_dataset) - 1)
+print(f"Testing index: {random_index_2}")
+
+print("Article:")
+print(test_dataset[random_index_2]['article'])
+print()
+print("Highlights")
+print(test_dataset[random_index_2]['highlights'])
+print()
+
+print("Original Model Test Highlights")
+original_model_test_2 = get_highlights(test_dataset[random_index_2]['article'], fine_tuned=False)
+print(original_model_test_2[0])
+print("Original Model Test Time")
+print(original_model_test_2[1])
+
+print()
+
+print("Fine-tuned Model Test Highlights")
+fine_tuned_model_test_2 = get_highlights(test_dataset[random_index_2]['article'], fine_tuned=True)
+print(fine_tuned_model_test_2[0])
+print("Fine-tuned Model Test Time")
+print(fine_tuned_model_test_2[1])
+```
+
+# Get Data
+
+```python
+import json
+from tqdm import tqdm
+
+final_data = []
+for test_item in tqdm(test_dataset):
+  ground_truth_highlights = test_item['highlights']
+  original_model_highlights, original_model_time = get_highlights(test_item['article'], fine_tuned = False)
+  fine_tuned_model_highlights, fine_tuned_model_time = get_highlights(test_item['article'], fine_tuned = True)
+
+  final_data.append({
+    "article": test_item['article'],
+    "ground_truth_all_highlights": ground_truth_highlights,
+    "original_model_all_data": (original_model_highlights, original_model_time),
+    "fine_tuned_model_all_data": (fine_tuned_model_highlights, fine_tuned_model_time)
+  })
+
+ground_truth_all_highlights = [data['ground_truth_all_highlights'] for data in final_data]
+
+original_model_all_highlights = [data['original_model_all_data'][0] for data in final_data]
+original_model_all_times = [data['original_model_all_data'][1] for data in final_data]
+
+fine_tuned_model_all_highlights = [data['fine_tuned_model_all_data'][0] for data in final_data]
+fine_tuned_model_all_times = [data['fine_tuned_model_all_data'][1] for data in final_data]
+
+# save data to file for backup
+with open("final_data.json", "w") as f:
+  json.dump(final_data, f)
+```
+
+# Evaluate
+
+# Rogue
+
+https://medium.com/@eren9677/text-summarization-387836c9e178
+
+```python
+#| colab: {base_uri: https://localhost:8080/}
+import evaluate
+rouge = evaluate.load('rouge')
+
+original_model_results = rouge.compute(
+    predictions = original_model_all_highlights,
+    references = ground_truth_all_highlights
+)
+
+fine_tuned_model_results = rouge.compute(
+    predictions = fine_tuned_model_all_highlights,
+    references = ground_truth_all_highlights
+)
+
+print(original_model_results)
+print(fine_tuned_model_results)
+```
+
+## BertScore
+
+https://haticeozbolat17.medium.com/text-summarization-how-to-calculate-bertscore-771a51022964
+
+```python
+#| colab: {base_uri: https://localhost:8080/}
+from transformers import BertTokenizer, BertForMaskedLM, BertModel
+from bert_score import BERTScorer
+
+# BERTScore calculation
+scorer = BERTScorer(model_type='bert-base-uncased')
+P_original_model, R_original_model, F1_original_model = scorer.score(original_model_all_highlights, ground_truth_all_highlights)
+P_fine_tuned_model, R_fine_tuned_model, F1_fine_tuned_model = scorer.score(fine_tuned_model_all_highlights, ground_truth_all_highlights)
+
+print(f"BERTScore Precision for original model: {P_original_model.mean():.4f}, Recall: {R_original_model.mean():.4f}, F1: {F1_original_model.mean():.4f}")
+print(f"BERTScore Precision for fine-tuned model: {P_fine_tuned_model.mean():.4f}, Recall: {R_fine_tuned_model.mean():.4f}, F1: {F1_fine_tuned_model.mean():.4f}")
+```
+
+## Inference Time Analysis
+
+```python
+# Basic Stats
+
+import numpy as np
+
+def print_inference_stats(times, model_name):
+    times = np.array(times)
+    print(f"--- {model_name} ---")
+    print(f"Mean:    {np.mean(times):.4f} ms")
+    print(f"Median:  {np.median(times):.4f} ms")
+    print(f"Std Dev: {np.std(times):.4f} ms")
+    print(f"Min:     {np.min(times):.4f} ms")
+    print(f"Max:     {np.max(times):.4f} ms")
+    print()
+
+print_inference_stats(original_model_all_times, "Model A")
+print_inference_stats(fine_tuned_model_all_times, "Model B")
+```
+
+```python
+import matplotlib.pyplot as plt
+
+# Box Plot (for quick comparison of median, spread, outliers)
+plt.boxplot([original_model_all_times, fine_tuned_model_all_times], labels=["Original Model", "Fine-tuned Model"])
+plt.ylabel("Inference Time (ms)")  # or whatever unit
+plt.title("Comparison of Inference Times")
+plt.grid(True)
+plt.show()
+```
+
+```python
+# Violin Plot (fancier version of boxplot + distribution)
+
+plt.violinplot([original_model_all_times, fine_tuned_model_all_times], showmeans=True)
+plt.xticks([1, 2], ["Original Model", "Fine-tuned Model"])
+plt.ylabel("Inference Time (ms)")
+plt.title("Violin Plot of Inference Times")
+plt.grid(True)
+plt.show()
+```
+
+```python
+# Cumulative Distribution Function (CDF) (good for seeing which model is faster X% of the time)
+
+# Sort the times
+original_model_all_times_sorted = np.sort(original_model_all_times)
+fine_tuned_model_all_times_sorted = np.sort(fine_tuned_model_all_times)
+
+# Compute cumulative probabilities
+cdf_original_times = np.arange(len(original_model_all_times_sorted)) / len(original_model_all_times_sorted)
+cdf_fine_tuned_times = np.arange(len(fine_tuned_model_all_times_sorted)) / len(fine_tuned_model_all_times_sorted)
+
+plt.plot(original_model_all_times_sorted, cdf_original_times, label="Original Model")
+plt.plot(fine_tuned_model_all_times_sorted, cdf_fine_tuned_times, label="Fine-tuned Model")
+plt.xlabel("Inference Time (ms)")
+plt.ylabel("Cumulative Probability")
+plt.title("CDF of Inference Times")
+plt.legend()
+plt.grid(True)
+plt.show()
+```
+
+## Potentially Useful
+
+https://asadiqbalch.medium.com/evaluating-llms-made-easy-with-hugging-face-evaluate-3fb1c4be617b
+
+
