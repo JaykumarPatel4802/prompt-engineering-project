@@ -15,12 +15,11 @@ jupyter: python3
 
 # Intro
 
-This documents the evaluation of out chatbot.
+This documents the evaluation of our chatbot.
 
 # Install Packages
 
 ```python
-%%capture
 import os
 if "COLAB_" not in "".join(os.environ.keys()):
     !pip install unsloth
@@ -42,7 +41,6 @@ else:
 # Load Original Base Model
 
 ```python
-#| colab: {base_uri: https://localhost:8080/}
 from unsloth import FastLanguageModel
 
 max_seq_length = 2048 # Choose any! We auto support RoPE Scaling internally!
@@ -51,7 +49,6 @@ load_in_4bit = True # Use 4bit quantization to reduce memory usage. Can be False
 ```
 
 ```python
-#| colab: {base_uri: https://localhost:8080/, height: 1000, referenced_widgets: [8f5ba48360ea4ec4973c19be92d16e6e, 33baada826c3426dadf5ca8915c442cf, 09134ff548df41c2b5d57d2ee7a588fa, f43fc24f955b4b9fa4259e641404c53e, 06290fba989d42f88f3bcf85a17cad58, e118759fe24446f3a4a93644a7465113, 8a4cf501406a47c98fd54027682dc880, f3d238574acc41a3822efd54ddab73e4, ac4f8e90d0734adbb749c67626461a7f, b1b87d9dd8564c3780e2ad83131e294b, 2f68da1f91d34e3a8d852e2978e5204a]}
 model, tokenizer = FastLanguageModel.from_pretrained(
     model_name = "unsloth/Qwen2.5-7B",
     max_seq_length = max_seq_length,
@@ -64,7 +61,6 @@ FastLanguageModel.for_inference(model) # Enable native 2x faster inference
 # Load Fine-Tuned Model
 
 ```python
-#| colab: {base_uri: https://localhost:8080/}
 from unsloth import FastLanguageModel
 
 max_seq_length = 2048 # Choose any! We auto support RoPE Scaling internally!
@@ -73,7 +69,6 @@ load_in_4bit = True # Use 4bit quantization to reduce memory usage. Can be False
 ```
 
 ```python
-#| colab: {base_uri: https://localhost:8080/, height: 1000, referenced_widgets: [2a799d63c8ce4e409968d43560366b93, 7b3821ee6ceb42d2b821eac170f98628, e8ab81e36dfc41d482c24d4408f11eba, 350f3a26f5d64ca999e4b571738b60ff, 08a9f02c8be74d939751d24778c144f8, fb09fba313a24c1cba590edb831a82b1, c7fa5b70c5a94f29850018afa4da11f4, 9974d14e5071411589120a1143189446, e5469f29ad8d44e6b70c133d831644f1, 11e846c2509b474b827a573b793d30c0, 3ce497efa4a7441ebca798221eb30d65]}
 fine_tuned_model, fine_tuned_tokenizer = FastLanguageModel.from_pretrained(
     model_name = "lora_model", # YOUR MODEL YOU USED FOR TRAINING
     max_seq_length = max_seq_length,
@@ -91,9 +86,15 @@ test_dataset = load_dataset("abisee/cnn_dailymail", name = "3.0.0", split = "tes
 ```
 
 ```python
-#| colab: {base_uri: https://localhost:8080/}
 print(len(test_dataset))
 print(test_dataset[0])
+```
+
+Console Output:
+
+```
+115
+{'article': '(CNN)The Palestinian Authority officially became the 123rd member of the International Criminal Court on Wednesday, a step that gives the court jurisdiction over alleged crimes in Palestinian territories. The formal accession was marked with a ceremony at The Hague, in the Netherlands, where the court is based. The Palestinians signed the ICC\'s founding Rome Statute in January, when they also accepted its jurisdiction over alleged crimes committed "in the occupied Palestinian territory, including East Jerusalem, since June 13, 2014." Later that month, the ICC opened a preliminary examination into the situation in Palestinian territories, paving the way for possible war crimes investigations against Israelis. As members of the court, Palestinians may be subject to counter-charges as well. Israel and the United States, neither of which is an ICC member, opposed the Palestinians\' efforts to join the body. But Palestinian Foreign Minister Riad al-Malki, speaking at Wednesday\'s ceremony, said it was a move toward greater justice. "As Palestine formally becomes a State Party to the Rome Statute today, the world is also a step closer to ending a long era of impunity and injustice," he said, according to an ICC news release. "Indeed, today brings us closer to our shared goals of justice and peace." Judge Kuniko Ozaki, a vice president of the ICC, said acceding to the treaty was just the first step for the Palestinians. "As the Rome Statute today enters into force for the State of Palestine, Palestine acquires all the rights as well as responsibilities that come with being a State Party to the Statute. These are substantive commitments, which cannot be taken lightly," she said. Rights group Human Rights Watch welcomed the development. "Governments seeking to penalize Palestine for joining the ICC should immediately end their pressure, and countries that support universal acceptance of the court\'s treaty should speak out to welcome its membership," said Balkees Jarrah, international justice counsel for the group. "What\'s objectionable is the attempts to undermine international justice, not Palestine\'s decision to join a treaty to which over 100 countries around the world are members." In January, when the preliminary ICC examination was opened, Israeli Prime Minister Benjamin Netanyahu described it as an outrage, saying the court was overstepping its boundaries. The United States also said it "strongly" disagreed with the court\'s decision. "As we have said repeatedly, we do not believe that Palestine is a state and therefore we do not believe that it is eligible to join the ICC," the State Department said in a statement. It urged the warring sides to resolve their differences through direct negotiations. "We will continue to oppose actions against Israel at the ICC as counterproductive to the cause of peace," it said. But the ICC begs to differ with the definition of a state for its purposes and refers to the territories as "Palestine." While a preliminary examination is not a formal investigation, it allows the court to review evidence and determine whether to investigate suspects on both sides. Prosecutor Fatou Bensouda said her office would "conduct its analysis in full independence and impartiality." The war between Israel and Hamas militants in Gaza last summer left more than 2,000 people dead. The inquiry will include alleged war crimes committed since June. The International Criminal Court was set up in 2002 to prosecute genocide, crimes against humanity and war crimes. CNN\'s Vasco Cotovio, Kareem Khadder and Faith Karimi contributed to this report.', 'highlights': 'Membership gives the ICC jurisdiction over alleged crimes committed in Palestinian territories since last June .\nIsrael and the United States opposed the move, which could open the door to war crimes investigations against Israelis .', 'id': 'f001ec5c4704938247d27a44948eebb37ae98d01'}
 ```
 
 # Add formatter
@@ -118,12 +119,27 @@ def formatting_prompts_func(input_text):
 ```
 
 ```python
-#| colab: {base_uri: https://localhost:8080/}
 # Testing the formatter
 print(formatting_prompts_func(test_dataset[0]['article']))
 ```
 
-### Run Inference
+Console Output:
+
+```
+Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
+
+### Instruction:
+Given the news article, determine the key highlights.
+
+### Input:
+(CNN)The Palestinian Authority officially became the 123rd member of the International Criminal Court on Wednesday, a step that gives the court jurisdiction over alleged crimes in Palestinian territories. The formal accession was marked with a ceremony at The Hague, in the Netherlands, where the court is based. The Palestinians signed the ICC's founding Rome Statute in January, when they also accepted its jurisdiction over alleged crimes committed "in the occupied Palestinian territory, including East Jerusalem, since June 13, 2014." Later that month, the ICC opened a preliminary examination into the situation in Palestinian territories, paving the way for possible war crimes investigations against Israelis. As members of the court, Palestinians may be subject to counter-charges as well. Israel and the United States, neither of which is an ICC member, opposed the Palestinians' efforts to join the body. But Palestinian Foreign Minister Riad al-Malki, speaking at Wednesday's ceremony, said it was a move toward greater justice. "As Palestine formally becomes a State Party to the Rome Statute today, the world is also a step closer to ending a long era of impunity and injustice," he said, according to an ICC news release. "Indeed, today brings us closer to our shared goals of justice and peace." Judge Kuniko Ozaki, a vice president of the ICC, said acceding to the treaty was just the first step for the Palestinians. "As the Rome Statute today enters into force for the State of Palestine, Palestine acquires all the rights as well as responsibilities that come with being a State Party to the Statute. These are substantive commitments, which cannot be taken lightly," she said. Rights group Human Rights Watch welcomed the development. "Governments seeking to penalize Palestine for joining the ICC should immediately end their pressure, and countries that support universal acceptance of the court's treaty should speak out to welcome its membership," said Balkees Jarrah, international justice counsel for the group. "What's objectionable is the attempts to undermine international justice, not Palestine's decision to join a treaty to which over 100 countries around the world are members." In January, when the preliminary ICC examination was opened, Israeli Prime Minister Benjamin Netanyahu described it as an outrage, saying the court was overstepping its boundaries. The United States also said it "strongly" disagreed with the court's decision. "As we have said repeatedly, we do not believe that Palestine is a state and therefore we do not believe that it is eligible to join the ICC," the State Department said in a statement. It urged the warring sides to resolve their differences through direct negotiations. "We will continue to oppose actions against Israel at the ICC as counterproductive to the cause of peace," it said. But the ICC begs to differ with the definition of a state for its purposes and refers to the territories as "Palestine." While a preliminary examination is not a formal investigation, it allows the court to review evidence and determine whether to investigate suspects on both sides. Prosecutor Fatou Bensouda said her office would "conduct its analysis in full independence and impartiality." The war between Israel and Hamas militants in Gaza last summer left more than 2,000 people dead. The inquiry will include alleged war crimes committed since June. The International Criminal Court was set up in 2002 to prosecute genocide, crimes against humanity and war crimes. CNN's Vasco Cotovio, Kareem Khadder and Faith Karimi contributed to this report.
+
+### Response:
+```
+
+# Run Inference
+
+## Create `get_highlights` function that runs inference
 
 ```python
 import time
@@ -156,8 +172,11 @@ def get_highlights(article, fine_tuned = False):
   return decoded_output[0].split('### Response:')[-1], end - start
 ```
 
+## Test `get_highlights` method
+
+### Test 1
+
 ```python
-#| colab: {base_uri: https://localhost:8080/}
 import random
 
 random_index = random.randint(0, len(test_dataset) - 1)
@@ -185,6 +204,38 @@ print("Fine-tuned Model Test Time")
 print(fine_tuned_model_test[1])
 ```
 
+Console Output:
+
+```
+Testing index: 0
+Article:
+(CNN)The Palestinian Authority officially became the 123rd member of the International Criminal Court on Wednesday, a step that gives the court jurisdiction over alleged crimes in Palestinian territories. The formal accession was marked with a ceremony at The Hague, in the Netherlands, where the court is based. The Palestinians signed the ICC's founding Rome Statute in January, when they also accepted its jurisdiction over alleged crimes committed "in the occupied Palestinian territory, including East Jerusalem, since June 13, 2014." Later that month, the ICC opened a preliminary examination into the situation in Palestinian territories, paving the way for possible war crimes investigations against Israelis. As members of the court, Palestinians may be subject to counter-charges as well. Israel and the United States, neither of which is an ICC member, opposed the Palestinians' efforts to join the body. But Palestinian Foreign Minister Riad al-Malki, speaking at Wednesday's ceremony, said it was a move toward greater justice. "As Palestine formally becomes a State Party to the Rome Statute today, the world is also a step closer to ending a long era of impunity and injustice," he said, according to an ICC news release. "Indeed, today brings us closer to our shared goals of justice and peace." Judge Kuniko Ozaki, a vice president of the ICC, said acceding to the treaty was just the first step for the Palestinians. "As the Rome Statute today enters into force for the State of Palestine, Palestine acquires all the rights as well as responsibilities that come with being a State Party to the Statute. These are substantive commitments, which cannot be taken lightly," she said. Rights group Human Rights Watch welcomed the development. "Governments seeking to penalize Palestine for joining the ICC should immediately end their pressure, and countries that support universal acceptance of the court's treaty should speak out to welcome its membership," said Balkees Jarrah, international justice counsel for the group. "What's objectionable is the attempts to undermine international justice, not Palestine's decision to join a treaty to which over 100 countries around the world are members." In January, when the preliminary ICC examination was opened, Israeli Prime Minister Benjamin Netanyahu described it as an outrage, saying the court was overstepping its boundaries. The United States also said it "strongly" disagreed with the court's decision. "As we have said repeatedly, we do not believe that Palestine is a state and therefore we do not believe that it is eligible to join the ICC," the State Department said in a statement. It urged the warring sides to resolve their differences through direct negotiations. "We will continue to oppose actions against Israel at the ICC as counterproductive to the cause of peace," it said. But the ICC begs to differ with the definition of a state for its purposes and refers to the territories as "Palestine." While a preliminary examination is not a formal investigation, it allows the court to review evidence and determine whether to investigate suspects on both sides. Prosecutor Fatou Bensouda said her office would "conduct its analysis in full independence and impartiality." The war between Israel and Hamas militants in Gaza last summer left more than 2,000 people dead. The inquiry will include alleged war crimes committed since June. The International Criminal Court was set up in 2002 to prosecute genocide, crimes against humanity and war crimes. CNN's Vasco Cotovio, Kareem Khadder and Faith Karimi contributed to this report.
+
+Highlights
+Membership gives the ICC jurisdiction over alleged crimes committed in Palestinian territories since last June .
+Israel and the United States opposed the move, which could open the door to war crimes investigations against Israelis .
+
+Original Model Test Highlights
+
+The key highlights of the news article are:
+
+1. The Palestinian Authority officially became the 123rd member of the International Criminal Court (ICC) on Wednesday, giving the court jurisdiction over alleged crimes in Palestinian territories.
+2. The Palestinians signed the ICC's founding Rome Statute in January, accepting its jurisdiction over alleged crimes committed in the occupied Palestinian territory, including East Jerusalem, since June 13, 2. The ICC opened a preliminary examination into the situation in Palestinian territories, paving the way for possible war crimes investigations against Israelis.
+ 3. As members of the court, Palestinians may be subject to counter-charges as
+Original Model Test Time
+10.787961959838867
+
+Fine-tuned Model Test Highlights
+
+Palestinian Authority officially becomes 123rd member of the International Criminal Court .
+Palestinians may be subject to counter-charges as well .
+Israel and the United States, neither of which is an ICC member, opposed the move .
+Fine-tuned Model Test Time
+5.0052711963653564
+```
+
+### Test 2
+
 ```python
 random_index_2 = random.randint(0, len(test_dataset) - 1)
 print(f"Testing index: {random_index_2}")
@@ -211,7 +262,38 @@ print("Fine-tuned Model Test Time")
 print(fine_tuned_model_test_2[1])
 ```
 
-# Get Data
+Console Output:
+
+```
+Testing index: 81
+Article:
+(CNN)One hundred and forty-seven victims. Many more families affected. Even more broken hopes and dreams. As Kenyans mourned those killed last week in one of the deadliest terrorist attacks in the nation, citizens used social media to share the victims' stories, hopes and dreams. Using the hashtag #147notjustanumber -- a reference to the number of people, mostly students, killed at Garissa University College on Thursday -- Kenyans tweeted pictures of the victims in happier times. Kenyan authorities have not released a list of the victims. The posts provided heart-wrenching details on the victims, including one about an elderly man whose dreams died with his son. He had reportedly taken a loan to educate him at the university, where he was killed by Al-Shabaab terrorists. The attack in Kenya killed 142 students, three security officers and two university security personnel, and was the nation's deadliest since the bombing of the U.S. Embassy in 1998. Kenyan churches mourned the dead during Easter services Sunday as armed guards protected the congregations. In emotional services nationwide, churchgoers wept as they paid tribute to the victims of the massacre. The gunmen who attacked the university in the predawn hours separated Muslims from Christians and killed the latter. The extremist group has also killed Muslims in recent attacks. The Interior Ministry has identified one of the attackers killed by security forces as the son of a government official. The father of suspect Abdirahim Abdullahi is a chief in Mandera and had reported his son missing, officials said. The Islamist extremist group is based in Somalia, but it hasn't confined its terrorism to the nation that shares a border with Kenya. In 2013, militants attacked Nairobi's upscale Westgate Mall, killing nearly 70 people.
+
+Highlights
+Kenyans use hashtag #147notjustanumber to honor victims of Kenya university attack .
+The attack killed 142 students, three security officers and two university security personnel .
+
+Original Model Test Highlights
+
+The key highlights of the news article are:
+
+1. **Massive Attack**: A terrorist attack occurred at Garissa University College, resulting in 147 deaths, making it one of the deadliest in Kenya.
+2. **Victims' Stories**: Kenyans shared the victims' stories, hopes, and dreams on social media using the hashtag #147notjustanumber.
+3. **Attack Details**: The attackers separated Muslims from Christians and targeted Christians, while the group has also killed Muslims in recent attacks.
+4. **Suspect Information**: One of the attackers was identified as the son of a government official, whose
+Original Model Test Time
+9.827091217041016
+
+Fine-tuned Model Test Highlights
+
+Kenyans share stories of victims on social media using #147notjustanumber .
+The attack in Kenya killed 142 students, three security officers and two university personnel .
+The gunmen who attacked the university in the predawn hours separated Muslims from Christians .
+Fine-tuned Model Test Time
+6.604422569274902
+```
+
+## Run Inference on Testing Data
 
 ```python
 import json
@@ -245,12 +327,11 @@ with open("final_data.json", "w") as f:
 
 # Evaluate
 
-# Rogue
+## Rogue
 
 https://medium.com/@eren9677/text-summarization-387836c9e178
 
 ```python
-#| colab: {base_uri: https://localhost:8080/}
 import evaluate
 rouge = evaluate.load('rouge')
 
@@ -268,12 +349,25 @@ print(original_model_results)
 print(fine_tuned_model_results)
 ```
 
+Console Output:
+
+```
+{'rouge1': np.float64(0.25593852325683963), 'rouge2': np.float64(0.09879602742572864), 'rougeL': np.float64(0.1845369489659137), 'rougeLsum': np.float64(0.23482225329274253)}
+{'rouge1': np.float64(0.3202412916174494), 'rouge2': np.float64(0.1291838902741764), 'rougeL': np.float64(0.23471503036165922), 'rougeLsum': np.float64(0.29682001157527327)}
+```
+
+Table View:
+
+| Model | rouge1 | rouge2 | rougeL | rougeLsum |
+|-------|--------|--------|--------|-----------|
+| Original Base Model | 0.25593852325683963 | 0.09879602742572864 | 0.1845369489659137 | 0.23482225329274253 |
+| Fine-tuned Model | 0.3202412916174494 | 0.1291838902741764 | 0.23471503036165922 | 0.29682001157527327 |
+
 ## BertScore
 
 https://haticeozbolat17.medium.com/text-summarization-how-to-calculate-bertscore-771a51022964
 
 ```python
-#| colab: {base_uri: https://localhost:8080/}
 from transformers import BertTokenizer, BertForMaskedLM, BertModel
 from bert_score import BERTScorer
 
@@ -286,7 +380,23 @@ print(f"BERTScore Precision for original model: {P_original_model.mean():.4f}, R
 print(f"BERTScore Precision for fine-tuned model: {P_fine_tuned_model.mean():.4f}, Recall: {R_fine_tuned_model.mean():.4f}, F1: {F1_fine_tuned_model.mean():.4f}")
 ```
 
+Console Output:
+
+```
+BERTScore Precision for original model: 0.4919, Recall: 0.6337, F1: 0.5528
+BERTScore Precision for fine-tuned model: 0.5750, Recall: 0.6091, F1: 0.5904
+```
+
+Table View:
+
+| Model | Precision | Recall | F1 |
+|-------|-----------|--------|----|
+| Original Base Model | 0.4919 | 0.6337 | 0.5528 |
+| Fine-tuned Model | 0.5750 | 0.6091 | 0.5904 |
+
 ## Inference Time Analysis
+
+### Basic Stats
 
 ```python
 # Basic Stats
@@ -307,6 +417,33 @@ print_inference_stats(original_model_all_times, "Model A")
 print_inference_stats(fine_tuned_model_all_times, "Model B")
 ```
 
+Console Output:
+
+```
+--- Model A ---
+Mean:    11.4647 sec
+Median:  11.3639 sec
+Std Dev: 1.5827 sec
+Min:     8.9727 sec
+Max:     16.8651 sec
+
+--- Model B ---
+Mean:    7.5664 sec
+Median:  7.3395 sec
+Std Dev: 2.2447 sec
+Min:     3.5611 sec
+Max:     17.9274 sec
+```
+
+Table View:
+
+| Model | Mean | Median | Std Dev | Min | Max |
+|-------|------|--------|---------|-----|-----|
+| Original Base Model | 11.4647 ms | 11.3639 ms | 1.5827 ms | 8.9727 ms | 16.8651 ms |
+| Fine-tuned Model | 7.5664 ms | 7.3395 ms | 2.2447 ms | 3.5611 ms | 17.9274 ms |
+
+### Box Plot
+
 ```python
 import matplotlib.pyplot as plt
 
@@ -318,6 +455,10 @@ plt.grid(True)
 plt.show()
 ```
 
+![](Box Plot.png)
+
+### Violin Plot
+
 ```python
 # Violin Plot (fancier version of boxplot + distribution)
 
@@ -328,6 +469,10 @@ plt.title("Violin Plot of Inference Times")
 plt.grid(True)
 plt.show()
 ```
+
+![](Violin Plot.png)
+
+### Cumulative Distribution Function (CDF)
 
 ```python
 # Cumulative Distribution Function (CDF) (good for seeing which model is faster X% of the time)
@@ -350,8 +495,6 @@ plt.grid(True)
 plt.show()
 ```
 
-## Potentially Useful
-
-https://asadiqbalch.medium.com/evaluating-llms-made-easy-with-hugging-face-evaluate-3fb1c4be617b
+![](CDF.png)
 
 
