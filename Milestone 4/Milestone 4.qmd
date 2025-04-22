@@ -594,3 +594,10 @@ The CDF plot illustrates the proportion of inference runs completed within a giv
 - In contrast, the original model has a more compact range, with all inferences completing between roughly 9 and 17 seconds.
 
 Overall, the fine-tuned model delivers faster results for the majority of inputs, reinforcing its advantage in latency-critical settings.
+
+# Future Directions
+
+**Full Dataset Fine-tuning**: In this project, the model was fine-tuned on only 1% of the available training data due to resource constraints. This limited exposure likely contributed to the higher variance in inference time, as the model may not have fully generalized to the input distribution. If computationally feasible, fine-tuning on the entire dataset could lead to more stable and consistent inference times by improving the model’s robustness and reducing its sensitivity to input variations.
+
+**Retrieval-Augmented Generation  + In-Context Learning Architecture**: An alternative approach worth exploring is a Retrieval-Augmented Generation (RAG) framework combined with In-Context Learning (ICL). By retrieving similar articles and their corresponding highlights during inference and providing them as examples in the prompt, the model may generate more accurate and contextually aligned summaries without requiring full fine-tuning, offering a flexible and scalable solution.
+

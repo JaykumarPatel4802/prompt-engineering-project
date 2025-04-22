@@ -3123,6 +3123,7 @@ vertical-align: -.125em;
   <li><a href="#cumulative-distribution-function-cdf" id="toc-cumulative-distribution-function-cdf" class="nav-link" data-scroll-target="#cumulative-distribution-function-cdf">Cumulative Distribution Function (CDF)</a></li>
   </ul></li>
   </ul></li>
+  <li><a href="#future-directions" id="toc-future-directions" class="nav-link" data-scroll-target="#future-directions">Future Directions</a></li>
   </ul>
 </nav>
 </div>
@@ -3720,6 +3721,11 @@ Max:     17.9274 sec</code></pre>
 </section>
 </section>
 </section>
+</section>
+<section id="future-directions" class="level1">
+<h1>Future Directions</h1>
+<p><strong>Full Dataset Fine-tuning</strong>: In this project, the model was fine-tuned on only 1% of the available training data due to resource constraints. This limited exposure likely contributed to the higher variance in inference time, as the model may not have fully generalized to the input distribution. If computationally feasible, fine-tuning on the entire dataset could lead to more stable and consistent inference times by improving the model’s robustness and reducing its sensitivity to input variations.</p>
+<p><strong>Retrieval-Augmented Generation + In-Context Learning Architecture</strong>: An alternative approach worth exploring is a Retrieval-Augmented Generation (RAG) framework combined with In-Context Learning (ICL). By retrieving similar articles and their corresponding highlights during inference and providing them as examples in the prompt, the model may generate more accurate and contextually aligned summaries without requiring full fine-tuning, offering a flexible and scalable solution.</p>
 </section>
 
 </main>
